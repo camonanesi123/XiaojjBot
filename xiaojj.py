@@ -20,11 +20,12 @@ import time
 from base64 import b64encode
 from functools import wraps
 from random import random, choice
+import random
 import pymysql
 import telegram
 from telegram import InlineQueryResultArticle, InputTextMessageContent,InlineKeyboardButton, InlineKeyboardMarkup
 import requests
-from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
+from telegram.ext import Updater, MessageHandler, Filters, CommandHandler,CallbackQueryHandler
 import json
 message_list = os.listdir("message")
 
@@ -112,7 +113,7 @@ def get_random_pornhub(update,context):
             share_link = 'https://telegram.me/share/url?url={0}&text=Click%20the%20link%20to%20join%20the%20chinese%20sex%20club%20'.format(link)
             keyboard = [
             [InlineKeyboardButton("广告位500/月", url='https://t.me/komonado')],
-            [InlineKeyboardButton('点此分享至5个群，获得高端查询权利', url=share_link)]
+            [InlineKeyboardButton('点此分享至5个群截图，找群主索取单女资料', url=share_link)]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             maopian['视频标题'] = rs[0]
@@ -135,7 +136,7 @@ def get_random_pornhub(update,context):
         db.close()
 
 
-#中国动作片查询
+
 @send_typing_action        
 def get_random_pornhub_cn(update,context):
     db = pymysql.connect(host='localhost', port=3306,user=DB_UNAME, passwd=DB_PASSWD, db='gatherinfo', charset='utf8')
@@ -154,7 +155,7 @@ def get_random_pornhub_cn(update,context):
             share_link = 'https://telegram.me/share/url?url={0}&text=Click%20the%20link%20to%20join%20the%20chinese%20sex%20club%20'.format(link)
             keyboard = [
             [InlineKeyboardButton("广告位500/月", url='https://t.me/komonado')],
-            [InlineKeyboardButton('点此分享至5个群，获得高端查询权利', url=share_link)]
+            [InlineKeyboardButton('点此分享至5个群截图，找群主索取单女资料', url=share_link)]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             maopian['视频标题'] = rs[0]
@@ -190,10 +191,10 @@ def getXjjInfo(update,context):
         return
     print(district,style)
     link = 'https://telegram.me/sexinfochina'
-    share_link = 'https://telegram.me/share/url?url={0}&text=Click%20the%20link%20to%20join%20the%20chinese%20sex%20club%20'.format(link)
-    keyboard = [[InlineKeyboardButton("印度代购|助勃延时|无副作用|无效退款", url='https://t.me/ahui888888')],
+    share_link = 'https://telegram.me/share/url?url={0}&text=点击链接加入小姐姐性息免费分享群'.format(link)
+    keyboard = [[InlineKeyboardButton("助勃延时", callback_data='yinduweige2020'),InlineKeyboardButton("迷奸水专卖", url='https://t.me/ghbchina')],
 	[InlineKeyboardButton("广告位500/月", url='https://t.me/komonado')],
-	[InlineKeyboardButton('点此分享至5个群，获得高端查询权利', url=share_link)]
+	[InlineKeyboardButton('点此分享5个群，白嫖数据等您拿', url=share_link)]
 	]
     reply_markup = InlineKeyboardMarkup(keyboard)
     # 打开数据库连接
@@ -277,7 +278,45 @@ def covid19_details(update,context):
     parse_mode=telegram.ParseMode.HTML)
     #用字典的方法获取值
     #print(dictinfo['status'])
+    
+#91porn随机小电影播放
+@send_typing_action
+def sex_porn(update,context):
+	#从1,100中随机抽取一个页码作为page参数
+    page = random.randint(1,10)
+    r = requests.get('https://91povideo.com/api/list_info?category=&page={0}'.format(page))
+    print('请求到数据')
+    print(r.text)
+    #用自带的json工具把字符串转成字典
+    dictinfo = json.loads(r.text)
+    #输出字典
+    print(dictinfo)
+    viewkey=dictinfo['data']['list'][random.randint(0,9)]['viewkey']
+    #再把密钥拿到去请求视频网址 每天更新
+    userKey = 'd42c5'
+    r = requests.get('https://91povideo.com/api/video_info?viewkey={0}&userKey={1}'.format(viewkey,userKey))
+    print('请求到数据')
+    print(r.text)
+    dictinfo = json.loads(r.text)
+    videoSrc = dictinfo['data']['videoSrc']
+    title = dictinfo['data']['title']
 
+    out_put1 = "视频题目:{0}\n视频连接:{1}\n"\
+    .format(title,videoSrc)
+    context.bot.send_message(chat_id=update.effective_chat.id, text=out_put1,
+    parse_mode=telegram.ParseMode.HTML)
+    #用字典的方法获取值
+    #print(dictinfo['status'])
+
+def button(update, context):
+    query = update.callback_query
+
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    #query.answer()
+    context.bot.answer_callback_query(query.id, text="微信妹子客服: {}".format(query.data), show_alert=True)
+    #query.edit_message_text(text="微信号: {}".format(query.data))
+    
 def main():
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
@@ -298,6 +337,8 @@ def main():
     dispatcher.add_handler(CommandHandler("covid19", covid19_details))
     dispatcher.add_handler(CommandHandler("kanpian", get_random_pornhub))   
     dispatcher.add_handler(CommandHandler("maopian", get_random_pornhub_cn)) 
+    dispatcher.add_handler(CommandHandler("91porn", sex_porn)) 
+    dispatcher.add_handler(CallbackQueryHandler(button))
     # log all errors
     dispatcher.add_error_handler(error)
     # Start the Bot
